@@ -1,0 +1,1468 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mapa de Tierras bajo Nominees — Tailandia</title>
+  <meta name="description" content="Mapa interactivo de concentración de tierras bajo propiedad de prestanombres vinculadas a ciudadanos israelíes en Koh Phangan, Koh Samui, Phuket y Pai.">
+
+  <!-- Fonts -->
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@500,700&f[]=general-sans@400,500,600&display=swap" rel="stylesheet">
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <style>
+    :root, [data-theme='light'] {
+      --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem);
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem);
+      --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem);
+      --text-2xl: clamp(2rem, 1.2rem + 2.5vw, 3.5rem);
+
+      --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
+      --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem;
+      --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem;
+      --space-16: 4rem; --space-20: 5rem; --space-24: 6rem;
+
+      --color-bg: #f7f6f2;
+      --color-surface: #f9f8f5;
+      --color-surface-2: #fbfbf9;
+      --color-surface-offset: #f3f0ec;
+      --color-divider: #dcd9d5;
+      --color-border: #d4d1ca;
+      --color-text: #28251d;
+      --color-text-muted: #7a7974;
+      --color-text-faint: #bab9b4;
+      --color-primary: #01696f;
+      --color-primary-hover: #0c4e54;
+      --color-warning: #964219;
+      --color-error: #a12c7b;
+      --color-notification: #a13544;
+      --color-success: #437a22;
+
+      --radius-sm: 0.375rem; --radius-md: 0.5rem;
+      --radius-lg: 0.75rem; --radius-xl: 1rem; --radius-full: 9999px;
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.12);
+
+      --font-display: 'Cabinet Grotesk', 'Inter', sans-serif;
+      --font-body: 'General Sans', 'Inter', sans-serif;
+    }
+
+    [data-theme='dark'] {
+      --color-bg: #121110;
+      --color-surface: #1a1917;
+      --color-surface-2: #201f1d;
+      --color-surface-offset: #1d1c1a;
+      --color-divider: #2a2927;
+      --color-border: #393836;
+      --color-text: #d4d3d1;
+      --color-text-muted: #8a8987;
+      --color-text-faint: #5a5957;
+      --color-primary: #4f98a3;
+      --color-primary-hover: #6fb0bb;
+      --color-warning: #bb653b;
+      --color-error: #d163a7;
+      --color-notification: #dd6974;
+      --color-success: #6daa45;
+
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+      --shadow-lg: 0 12px 32px rgba(0,0,0,0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100dvh;
+      line-height: 1.6;
+      font-family: var(--font-body);
+      font-size: var(--text-base);
+      color: var(--color-text);
+      background-color: var(--color-bg);
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, h4 { text-wrap: balance; line-height: 1.2; font-family: var(--font-display); }
+    p, li { text-wrap: pretty; max-width: 72ch; }
+
+    a, button, [role='button'], input, select {
+      transition: color 180ms cubic-bezier(0.16,1,0.3,1), background 180ms cubic-bezier(0.16,1,0.3,1), border-color 180ms cubic-bezier(0.16,1,0.3,1), box-shadow 180ms cubic-bezier(0.16,1,0.3,1);
+    }
+
+    button { cursor: pointer; background: none; border: none; font-family: inherit; color: inherit; }
+
+    /* Header */
+    .header {
+      position: sticky; top: 0; z-index: 1000;
+      background: var(--color-bg);
+      border-bottom: 1px solid var(--color-border);
+      backdrop-filter: blur(12px);
+      padding: var(--space-3) var(--space-6);
+      display: flex; align-items: center; justify-content: space-between;
+      gap: var(--space-4);
+    }
+    .header-brand { display: flex; align-items: center; gap: var(--space-3); }
+    .header-brand svg { flex-shrink: 0; color: var(--color-primary); }
+    .header-title { font-family: var(--font-display); font-weight: 700; font-size: var(--text-sm); color: var(--color-text); }
+    .header-subtitle { font-size: var(--text-xs); color: var(--color-text-muted); }
+    .header-actions { display: flex; align-items: center; gap: var(--space-2); }
+    .theme-toggle { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; border-radius: var(--radius-md); color: var(--color-text-muted); }
+    .theme-toggle:hover { background: var(--color-surface-offset); color: var(--color-text); }
+
+    /* Hero */
+    .hero {
+      padding: var(--space-12) var(--space-6) var(--space-8);
+      max-width: 1280px; margin: 0 auto;
+    }
+    .hero-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-warning); margin-bottom: var(--space-3); }
+    .hero h1 { font-size: var(--text-2xl); font-weight: 700; margin-bottom: var(--space-4); }
+    .hero p { font-size: var(--text-base); color: var(--color-text-muted); max-width: 70ch; }
+
+    /* Map container */
+    .map-section {
+      max-width: 1280px; margin: 0 auto;
+      padding: 0 var(--space-6) var(--space-8);
+      position: relative;
+    }
+    #map {
+      height: 600px;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-lg);
+      z-index: 1;
+    }
+    [data-theme='dark'] #map { border-color: var(--color-border); }
+    .leaflet-popup-content-wrapper {
+      background: var(--color-surface);
+      color: var(--color-text);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--color-border);
+    }
+    .leaflet-popup-tip { background: var(--color-surface); border: 1px solid var(--color-border); }
+    .leaflet-popup-content { margin: var(--space-4); font-family: var(--font-body); }
+    .leaflet-container { font-family: var(--font-body); background: var(--color-surface-offset); }
+    .leaflet-control-zoom a { background: var(--color-surface) !important; color: var(--color-text) !important; border-color: var(--color-border) !important; }
+    .leaflet-control-zoom a:hover { background: var(--color-surface-offset) !important; }
+    [data-theme='dark'] .leaflet-tile { filter: brightness(0.65) contrast(1.1); }
+
+    /* Controls panel */
+    .controls-panel {
+      max-width: 1280px; margin: 0 auto;
+      padding: 0 var(--space-6) var(--space-6);
+      display: flex; flex-wrap: wrap; gap: var(--space-4);
+      align-items: flex-end;
+    }
+    .control-group { display: flex; flex-direction: column; gap: var(--space-2); min-width: 160px; }
+    .control-label { font-size: var(--text-xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--color-text-muted); }
+    .control-group select, .control-group input[type="month"] {
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-size: var(--text-sm);
+      font-family: var(--font-body);
+    }
+    .control-group select:focus, .control-group input:focus {
+      outline: 2px solid var(--color-primary);
+      outline-offset: 1px;
+    }
+    .btn-reset {
+      padding: var(--space-2) var(--space-4);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: var(--color-surface);
+      color: var(--color-text);
+      font-size: var(--text-sm);
+      font-family: var(--font-body);
+    }
+    .btn-reset:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+    /* Toggle chips */
+    .toggle-row { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-top: var(--space-3); }
+    .toggle-chip {
+      display: inline-flex; align-items: center; gap: var(--space-2);
+      padding: var(--space-2) var(--space-3);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-full);
+      background: var(--color-surface);
+      font-size: var(--text-sm);
+      cursor: pointer;
+      transition: all 180ms cubic-bezier(0.16,1,0.3,1);
+    }
+    .toggle-chip.active { border-color: var(--color-notification); background: color-mix(in oklab, var(--color-notification) 12%, var(--color-surface)); color: var(--color-notification); }
+    .toggle-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-text-faint); }
+    .toggle-chip.active .dot { background: var(--color-notification); }
+
+    /* Stats bar */
+    .stats-bar {
+      max-width: 1280px; margin: 0 auto;
+      padding: var(--space-4) var(--space-6);
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4);
+    }
+    .stat-card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: var(--space-4);
+    }
+    .stat-value { font-family: var(--font-display); font-size: var(--text-xl); font-weight: 700; color: var(--color-text); }
+    .stat-value.accent { color: var(--color-warning); }
+    .stat-value.danger { color: var(--color-notification); }
+    .stat-label { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: var(--space-1); }
+
+    /* Koh Phangan 41% panel */
+    .phangan-panel {
+      max-width: 1280px; margin: 0 auto;
+      padding: var(--space-8) var(--space-6);
+    }
+    .phangan-panel-inner {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-8);
+      display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-8);
+      align-items: center;
+    }
+    @media (max-width: 768px) { .phangan-panel-inner { grid-template-columns: 1fr; } }
+
+    .phangan-bar-container { position: relative; height: 200px; display: flex; flex-direction: column; }
+    .phangan-bar { width: 100%; border-radius: var(--radius-md); overflow: hidden; display: flex; flex-1; border: 1px solid var(--color-border); }
+    .phangan-bar-israeli { background: linear-gradient(135deg, var(--color-notification), #8a2a38); display: flex; align-items: center; justify-content: center; flex-direction: column; transition: flex 800ms cubic-bezier(0.16,1,0.3,1); }
+    .phangan-bar-other { background: var(--color-surface-offset); display: flex; align-items: center; justify-content: center; flex-direction: column; transition: flex 800ms cubic-bezier(0.16,1,0.3,1); }
+    .phangan-bar-pct { font-family: var(--font-display); font-weight: 700; font-size: var(--text-xl); color: #fff; }
+    .phangan-bar-label { font-size: var(--text-xs); color: rgba(255,255,255,0.8); }
+    .phangan-bar-other .phangan-bar-pct { color: var(--color-text-muted); }
+    .phangan-bar-other .phangan-bar-label { color: var(--color-text-faint); }
+
+    .phangan-info h3 { font-size: var(--text-lg); margin-bottom: var(--space-3); }
+    .phangan-info p { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-3); }
+    .phangan-info .source { font-size: var(--text-xs); color: var(--color-text-faint); }
+
+    /* Data table */
+    .data-section {
+      max-width: 1280px; margin: 0 auto;
+      padding: var(--space-8) var(--space-6);
+    }
+    .data-section h2 { font-size: var(--text-lg); margin-bottom: var(--space-4); }
+    .data-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+    .data-table th { text-align: left; padding: var(--space-3); border-bottom: 2px solid var(--color-border); font-weight: 600; color: var(--color-text-muted); font-size: var(--text-xs); text-transform: uppercase; letter-spacing: 0.04em; }
+    .data-table td { padding: var(--space-3); border-bottom: 1px solid var(--color-divider); vertical-align: top; }
+    .data-table tr:hover td { background: var(--color-surface-offset); }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: var(--radius-full); font-size: var(--text-xs); font-weight: 500; }
+    .badge-env { background: color-mix(in oklab, var(--color-warning) 15%, var(--color-surface)); color: var(--color-warning); }
+    .badge-comm { background: color-mix(in oklab, var(--color-notification) 15%, var(--color-surface)); color: var(--color-notification); }
+    .badge-raid { background: color-mix(in oklab, var(--color-error) 15%, var(--color-surface)); color: var(--color-error); }
+    .badge-res { background: color-mix(in oklab, var(--color-blue, #006494) 12%, var(--color-surface)); color: var(--color-blue, #5591c7); }
+    .badge-com { background: color-mix(in oklab, var(--color-success) 12%, var(--color-surface)); color: var(--color-success); }
+    .badge-mixed { background: color-mix(in oklab, var(--color-primary) 12%, var(--color-surface)); color: var(--color-primary); }
+
+    /* Methodology */
+    .methodology {
+      max-width: 1280px; margin: 0 auto;
+      padding: var(--space-8) var(--space-6) var(--space-16);
+    }
+    .methodology-inner {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: var(--space-8);
+    }
+    .methodology h2 { font-size: var(--text-lg); margin-bottom: var(--space-4); }
+    .methodology p { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-3); }
+    .methodology ul { list-style: none; padding: 0; }
+    .methodology li { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-2); padding-left: var(--space-4); position: relative; }
+    .methodology li::before { content: '—'; position: absolute; left: 0; color: var(--color-text-faint); }
+
+    /* Sources */
+    .sources { margin-top: var(--space-6); }
+    .sources h3 { font-size: var(--text-sm); margin-bottom: var(--space-3); color: var(--color-text); }
+    .sources ul { list-style: none; padding: 0; }
+    .sources li { font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-2); }
+    .sources a { color: var(--color-primary); text-decoration: none; }
+    .sources a:hover { text-decoration: underline; }
+
+    /* Custom marker styles */
+    .custom-marker { display: flex; align-items: center; justify-content: center; }
+    .marker-icon { width: 32px; height: 32px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; font-size: 14px; }
+    [data-theme='dark'] .marker-icon { border-color: var(--color-surface); }
+
+    /* Legend */
+    .legend {
+      position: absolute; bottom: 20px; right: 20px; z-index: 500;
+      background: var(--color-surface); border: 1px solid var(--color-border);
+      border-radius: var(--radius-md); padding: var(--space-4);
+      box-shadow: var(--shadow-md); font-size: var(--text-xs);
+      max-width: 220px;
+    }
+    .legend h4 { font-size: var(--text-xs); font-weight: 600; margin-bottom: var(--space-2); text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-muted); }
+    .legend-item { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-1); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid var(--color-surface); }
+
+    /* Popups */
+    .popup-title { font-family: var(--font-display); font-weight: 700; font-size: var(--text-base); margin-bottom: var(--space-1); }
+    .popup-zone { font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: var(--space-3); }
+    .popup-stat { display: flex; justify-content: space-between; padding: var(--space-1) 0; border-bottom: 1px solid var(--color-divider); font-size: var(--text-sm); }
+    .popup-stat:last-child { border-bottom: none; }
+    .popup-stat-label { color: var(--color-text-muted); }
+    .popup-stat-value { font-weight: 600; }
+    .popup-flags { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-2); }
+    .popup-source { font-size: var(--text-xs); color: var(--color-text-faint); margin-top: var(--space-2); }
+    .popup-source a { color: var(--color-primary); text-decoration: none; }
+    .popup-source a:hover { text-decoration: underline; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      #map { height: 400px; }
+      .controls-panel { flex-direction: column; align-items: stretch; }
+      .control-group { min-width: auto; }
+      .legend { max-width: 180px; bottom: 10px; right: 10px; }
+    }
+
+    /* Focus ring */
+    :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; border-radius: var(--radius-sm); }
+
+    /* Selection */
+    ::selection { background: color-mix(in oklab, var(--color-primary) 25%, transparent); }
+
+    /* Disclaimer banner */
+    .disclaimer {
+      max-width: 1280px; margin: 0 auto;
+      padding: var(--space-2) var(--space-6);
+    }
+    .disclaimer-inner {
+      background: color-mix(in oklab, var(--color-warning) 8%, var(--color-surface));
+      border-left: 3px solid var(--color-warning);
+      border-radius: var(--radius-sm);
+      padding: var(--space-3) var(--space-4);
+      font-size: var(--text-xs);
+      color: var(--color-text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-brand">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+    <div>
+      <div class="header-title">Tierras bajo Nominees — Tailandia</div>
+      <div class="header-subtitle">Rastreo de concentración de tierras · 2023–2026 · Actualizado ago 2026</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="theme-toggle" data-theme-toggle aria-label="Cambiar tema">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="hero-label">Investigación interactiva</div>
+  <h1>Concentración reportada de tierras bajo prestanombres vinculadas a ciudadanos israelíes en Tailandia</h1>
+  <p>Mapa interactivo que rastrea la concentración de tierras mediante estructuras de nominees (prestanombres) en cuatro zonas clave: Koh Phangan, Koh Samui, Phuket y Pai. Los datos provienen de declaraciones parlamentarias del Senado tailandés, comunicados y operativos del Departamento de Investigación Especial (DSI), registros del Departamento de Desarrollo Empresarial (DBD) y cobertura periodística basada en fuentes oficiales. Incluye filtros por zona, tipo de desarrollo y fecha de registro u operativo desde 2023.</p>
+</section>
+
+<!-- Disclaimer -->
+<div class="disclaimer">
+  <div class="disclaimer-inner">
+    <strong>Aviso:</strong> Las cifras y acusaciones presentadas se basan en declaraciones parlamentarias, informes oficiales y cobertura periodística. Algunos datos (como el 41% de control de tierras en Koh Phangan) provienen de declaraciones del Senado y pueden diferir de las cifras del Departamento de Tierras. Todos los involucrados gozan de presunción de inocencia hasta resolución judicial firme.
+  </div>
+</div>
+
+<!-- Stats bar -->
+<div class="stats-bar">
+  <div class="stat-card">
+    <div class="stat-value danger">41%</div>
+    <div class="stat-label">Tierras de Koh Phangan bajo nominees israelíes (afirmación del Senado, abril 2026)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">12.906</div>
+    <div class="stat-label">Empresas examinadas en Koh Samui — 875 marcadas como sospechosas</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value accent">5</div>
+    <div class="stat-label">Zonas bajo operativo: Koh Phangan, Koh Samui, Phuket, Pai, Pattaya</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-value">5.000M+</div>
+    <div class="stat-label">Baht en ingresos de red israelí con nacionalidad tailandesa (Phuket, ago 2026)</div>
+  </div>
+</div>
+
+<!-- Controls -->
+<section class="controls-panel">
+  <div class="control-group">
+    <label class="control-label" for="filter-zone">Zona</label>
+    <select id="filter-zone">
+      <option value="all">Todas las zonas</option>
+      <option value="koh-phangan">Koh Phangan</option>
+      <option value="koh-samui">Koh Samui</option>
+      <option value="phuket">Phuket</option>
+      <option value="pai">Pai</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="filter-type">Tipo de desarrollo</label>
+    <select id="filter-type">
+      <option value="all">Todos los tipos</option>
+      <option value="residential">Residencial</option>
+      <option value="commercial">Comercial</option>
+      <option value="mixed">Mixto</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label class="control-label" for="filter-date">Registro / operativo desde</label>
+    <input type="month" id="filter-date" value="2023-01" min="2023-01" max="2026-12">
+  </div>
+  <button class="btn-reset" id="btn-reset">Restablecer filtros</button>
+</section>
+
+<!-- Toggle chips for flags -->
+<section class="controls-panel" style="padding-top: 0;">
+  <div class="control-group" style="min-width: auto; flex-direction: row; align-items: center; gap: var(--space-3); flex-wrap: wrap;">
+    <span class="control-label">Resaltar:</span>
+    <div class="toggle-row">
+      <div class="toggle-chip active" data-flag="environmental">
+        <span class="dot"></span> Violaciones ambientales
+      </div>
+      <div class="toggle-chip active" data-flag="community">
+        <span class="dot"></span> Exclusión comunitaria
+      </div>
+      <div class="toggle-chip active" data-flag="enforcement">
+        <span class="dot"></span> Operativos policiales
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Map -->
+<section class="map-section">
+  <div id="map"></div>
+  <div class="legend">
+    <h4>Leyenda</h4>
+    <div class="legend-item"><span class="legend-dot" style="background: #dd6974;"></span> Vínculo israelí investigado/reportado</div>
+    <div class="legend-item"><span class="legend-dot" style="background: #bb653b;"></span> Violación ambiental</div>
+    <div class="legend-item"><span class="legend-dot" style="background: #d163a7;"></span> Operativo policial</div>
+    <div class="legend-item"><span class="legend-dot" style="background: #4f98a3;"></span> Bajo investigación / no verificado</div>
+  </div>
+</section>
+
+<!-- Koh Phangan 41% Panel -->
+<section class="phangan-panel">
+  <div class="phangan-panel-inner">
+    <div class="phangan-bar-container">
+      <div class="phangan-bar">
+        <div class="phangan-bar-israeli" style="flex: 41;">
+          <div class="phangan-bar-pct">41%</div>
+          <div class="phangan-bar-label">Nominees israelíes</div>
+        </div>
+        <div class="phangan-bar-other" style="flex: 59;">
+          <div class="phangan-bar-pct">59%</div>
+          <div class="phangan-bar-label">Otras tierras</div>
+        </div>
+      </div>
+    </div>
+    <div class="phangan-info">
+      <h3>El 41% de Koh Phangan: afirmación parlamentaria no reconciliada</h3>
+      <p>En abril de 2026, el Senador Chairong, miembro de la subcomisión del Senado sobre asuntos militares, declaró en el Parlamento que el 41% de las tierras de Koh Phangan estaban en manos de estructuras de nominees vinculadas a ciudadanos israelíes. También afirmó que 2.600 familias israelíes se habían establecido permanentemente en la isla. <strong>Esta cifra no ha sido reconciliada con los datos del Departamento de Tierras</strong>, que indica que solo el 38% de la isla tiene títulos de propiedad documentados.</p>
+      <p>El Departamento de Tierras respondió que solo el 38% de la isla tiene títulos de propiedad documentados, y que los extranjeros ocupan aproximadamente el 6% de esos terrenos titulados. La discrepancia refleja la dificultad de verificar estructuras de nominees que operan a través de empresas con mayoría tailandesa nominal.</p>
+      <p class="source">Fuente: Declaración del Sen. Chairong en el Parlamento, abril 2026 — reportado por <a href="https://www.youtube.com/watch?v=WSWeB8rrpNE" target="_blank" rel="noopener">YouTube/mediación parlamentaria</a>; datos del Dept. de Tierras vía <a href="https://www.thaiexaminer.com/thai-news-foreigners/2026/05/14/anutin-visits-koh-phangan-as-islands-nominee-crackdown-shows-68-of-firms-with-foreign-ownership-links/" target="_blank" rel="noopener">Thai Examiner</a></p>
+    </div>
+  </div>
+</section>
+
+<!-- Data table -->
+<section class="data-section">
+  <h2>Registro de zonas y operativos</h2>
+  <table class="data-table" id="data-table">
+    <thead>
+      <tr>
+        <th>Zona</th>
+        <th>Tipo</th>
+        <th>Empresas extranjeras</th>
+        <th>Vínculo israelí</th>
+        <th>Alertas</th>
+        <th>Fecha clave</th>
+        <th>Fuente</th>
+      </tr>
+    </thead>
+    <tbody id="data-table-body"></tbody>
+  </table>
+</section>
+
+<!-- Methodology -->
+<section class="methodology">
+  <div class="methodology-inner">
+    <h2>Metodología y limitaciones de datos</h2>
+    <p>Este mapa compila datos de múltiples fuentes: declaraciones parlamentarias del Senado tailandés, comunicados y operativos del Departamento de Investigación Especial (DSI), registros del Departamento de Desarrollo Empresarial (DBD), operativos de la Policía Real Tailandesa, y cobertura periodística de medios como The Nation, Thai Examiner, Thairath, Al Jazeera y SCMP. No se han obtenido documentos primarios del Senado ni registros crudos del registro mercantil local; las cifras se basan en lo reportado por estas fuentes.</p>
+    <ul>
+      <li>El porcentaje del 41% en Koh Phangan proviene de una afirmación parlamentaria del Senador Chairong (abril 2026) y no ha sido reconciliada con las cifras del Departamento de Tierras, que sitúa el porcentaje oficial en torno al 6% de los terrenos titulados (38% de la isla).</li>
+      <li>Las ubicaciones de los marcadores son aproximadas a nivel de zona/subdistrito, no de parcela individual. Las fechas de registro corresponden a operativos o reportes, no a fechas exactas de adquisición.</li>
+      <li>La presencia de capital extranjero en una empresa no implica necesariamente actividad ilegal; la condición de nominee debe ser determinada por las autoridades.</li>
+      <li>Los datos de Pai se basan principalmente en reportes comunitarios y cobertura periodística, con menos registros empresariales detallados que las islas del sur.</li>
+      <li>Todas las personas mencionadas gozan de presunción de inocencia hasta condena firme.</li>
+      <li>Tipos de fuente por marcador: <strong>parlamentario</strong> (declaración del Senado), <strong>oficial</strong> (comunicado/operativo de DSI/DBD/Policía), <strong>prensa</strong> (cobertura periodística), <strong>denuncia comunitaria</strong> (reportes de residentes), <strong>no verificado</strong> (afirmación no confirmada por fuente oficial).</li>
+    </ul>
+
+    <div class="sources">
+      <h3>Fuentes principales</h3>
+      <ul>
+        <li><a href="https://www.rawai.com/senate-deputy-warns-of-crackdown-on-foreign-nominee-phuket/" target="_blank" rel="noopener">Rawai Phuket News</a> — Sen. Vicepres. Kriangkrai Srirak, abril 2026</li>
+        <li><a href="https://www.thaiexaminer.com/thai-news-foreigners/2026/05/14/anutin-visits-koh-phangan-as-islands-nominee-crackdown-shows-68-of-firms-with-foreign-ownership-links/" target="_blank" rel="noopener">Thai Examiner</a> — Visita del PM Anutin a Koh Phangan, mayo 2026</li>
+        <li><a href="https://www.nationthailand.com/news/general/40068623" target="_blank" rel="noopener">The Nation Thailand</a> — Expansión de la investigación DSI, julio 2026</li>
+        <li><a href="https://www.nationthailand.com/news/general/40069062" target="_blank" rel="noopener">The Nation Thailand</a> — Chabad House Phuket, julio 2026</li>
+        <li><a href="https://en.thairath.co.th/scoop/theissue/2947451" target="_blank" rel="noopener">Thairath</a> — Modelo Phuket, demolición Hat Nui, julio 2026</li>
+        <li><a href="https://www.channelnewsasia.com/asia/thailand-northern-pai-israeli-paetongtarn-4946631" target="_blank" rel="noopener">Channel NewsAsia</a> — Pai, febrero 2025</li>
+        <li><a href="https://www.aljazeera.com/economy/2026/6/3/thailand-cracks-down-on-foreign-companies-using-fig-leaf-of-local-ownership" target="_blank" rel="noopener">Al Jazeera</a> — Redada general, junio 2026</li>
+        <li><a href="https://www.scmp.com/business/article/3357761/thai-property-crackdown-foreign-buyers-hit-pause-villas-nominee-loophole-closes" target="_blank" rel="noopener">SCMP</a> — Mercado inmobiliario, junio 2026</li>
+        <li><a href="https://www.nationthailand.com/news/general/40066179" target="_blank" rel="noopener">The Nation Thailand</a> — PM Anutin Koh Phangan, mayo 2026</li>
+        <li><a href="https://www.nationthailand.com/news/general/40067708" target="_blank" rel="noopener">The Nation Thailand</a> — Brecha legal Sección 94, junio 2026</li>
+        <li><a href="https://www.malaymail.com/amp/news/life/2025/10/20/trouble-in-paradise-koh-phangans-hidden-villas-spark-foreign-ownership-and-forest-damage-probe-in-thailand/195301" target="_blank" rel="noopener">Malay Mail / Khaosod</a> — Daño forestal Koh Phangan, octubre 2025</li>
+        <li><a href="https://www.chiangraitimes.com/news/israelis-face-scrutiny-in-southern-thailand-hotspots/" target="_blank" rel="noopener">CTN News</a> — Investigación Surat Thani, octubre 2025</li>
+        <li><a href="https://thainewsroom.com/2026/06/10/israeli-man-nabbed-in-koh-phangan-nominee-crackdown/" target="_blank" rel="noopener">Thai Newsroom</a> — Arresto israelí, junio 2026</li>
+        <li><a href="https://www.nationthailand.com/news/general/40067662" target="_blank" rel="noopener">The Nation Thailand</a> — Operativo Andaman, junio 2026</li>
+        <li><a href="https://www.nationthailand.com/news/general/40066566" target="_blank" rel="noopener">The Nation Thailand</a> — Fase 2 Koh Phangan, mayo 2026</li>
+        <li><a href="https://www.nationthailand.com/business/property/40067708" target="_blank" rel="noopener">The Nation Thailand</a> — Datos DBD por isla</li>
+        <li><a href="https://aimbangkok.com/thailand-nominee-land-crackdown-dol-enforcement-2026/" target="_blank" rel="noopener">AIM Bangkok</a> — Marco DOL, julio 2026</li>
+        <li><a href="https://asterofasia.com/en/blog/thailand-property-law-nominee-crackdown-2026" target="_blank" rel="noopener">Aster of Asia</a> — Panorama general, julio 2026</li>
+        <li><a href="https://en.thairath.co.th/news/politic/2947767" target="_blank" rel="noopener">Thairath</a> — NACC visita Dept. de Tierras, julio 2026</li>
+        <li><a href="https://thethaiger.com/news/national/deputy-pm-says-no-foreigners-encroach-koh-pha-ngan-forest" target="_blank" rel="noopener">Thaiger</a> — Denegación bosque Koh Phangan, octubre 2025</li>
+        <li><a href="https://www.pattayamail.com/news/koh-phangan-under-fire-as-developer-alleges-lawless-island-run-by-nominee-networks-and-state-failures-547419" target="_blank" rel="noopener">Pattaya Mail</a> — Developer allegations, mayo 2026</li>
+        <li><a href="https://www.thephuketnews.com/rfd-orders-demolition-of-11-illegal-structures-at-nui-beach-100362.php" target="_blank" rel="noopener">The Phuket News</a> — Orden demolición Nui Beach, mayo 2026</li>
+        <li><a href="https://www.nationthailand.com/news/general/40068510" target="_blank" rel="noopener">The Nation Thailand</a> — Red DSI 5 zonas, julio 2026</li>
+        <li><a href="https://internationalinvestment.biz/en/thailand/8450-thailand-tightens-checks-on-foreign-villa-deals.html" target="_blank" rel="noopener">International Investment</a> — Controles villas, julio 2026</li>
+        <li><a href="https://www.asialifestylemagazine.com/koh-samui-villa-ownership-what-thailands-nominee-crackdown-changes-for-foreign-buyers/" target="_blank" rel="noopener">Asia Lifestyle Magazine</a> — Datos empresas Koh Samui</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<script>
+// ===== DATA =====
+const zones = [
+  {
+    id: 'koh-phangan',
+    name: 'Koh Phangan',
+    coords: [9.7333, 99.9833],
+    zoom: 11,
+    type: 'mixed',
+    dateFrom: '2023-01',
+    companiesTotal: 4761,
+    companiesForeign: 3213,
+    foreignPct: 67.5,
+    israeliPct: 22,
+    israeliCompanies: 720,
+    israeliFamilies: 2600,
+    landPctClaim: 41,
+    landPctOfficial: 6,
+    landTitledPct: 38,
+    deedsSeized: 37,
+    deedsValue: 150,
+    arrestWarrants: 45,
+    arrested: 27,
+    illegalRai: 80,
+    keyDate: '2026-05',
+    keyEvent: 'Redada del PM Anutin — 24 ubicaciones, 37 títulos incautados',
+    flags: ['environmental', 'community', 'enforcement'],
+    markerType: 'israeli',
+    subzones: [
+      { name: 'Ban Sri Thanu ("segundo Tel Aviv")', coords: [9.7450, 99.9650], type: 'mixed', dateFrom: '2023-06', flags: ['community', 'enforcement'], desc: 'Centro Chabad, escuela internacional israelí (89/100 estudiantes israelíes). Anuncios en hebreo de venta de tierras. Acusaciones de exclusión comunitaria.' },
+      { name: 'Ban Chalok Lam (Moo 7)', coords: [9.8200, 99.9850], type: 'residential', dateFrom: '2024-01', flags: ['enforcement'], desc: '6 villas de lujo con piscina vinculadas a israelíes. Alquiler 30.000 THB/noche. Taylor Villa Co Ltd, arrendamiento 30 años, 47M THB.' },
+      { name: 'Moo 8 — Redada octubre 2025', coords: [9.7800, 99.9700], type: 'mixed', dateFrom: '2025-10', flags: ['enforcement'], desc: 'Redada policial: 4 israelíes arrestados por posesión de drogas. Investigación de nomineee dirigido por sospechoso "Yara".' },
+      { name: 'FB Properties / Yoga House', coords: [9.7600, 99.9800], type: 'commercial', dateFrom: '2023-03', flags: ['enforcement'], desc: 'Empresa israelí con nominees tailandeses. 8 parcelas, 7.5 rai, 60M THB. Operación hotelera sin licencia. 5 empresas afiliadas en misma dirección, >100M THB.' },
+      { name: 'Reserva forestal nacional — edificios ilegales', coords: [9.7000, 99.9500], type: 'mixed', dateFrom: '2025-09', flags: ['environmental'], desc: 'Inspección del Ejército encontró ≥5 edificios dentro de reserva forestal. Laderas despejadas, pozos de agua subterránea, barreras anti-deslizamiento. Violación Ley de Reservas Forestales de 1964.' },
+      { name: 'Carteles "No Israelis Allowed" (oct 2025–ago 2026)', coords: [9.7350, 99.9850], type: 'commercial', dateFrom: '2025-10', flags: ['community'], desc: 'Restaurantes y comercios muestran carteles prohibiendo israelíes. Vídeo viral mayo 2026 (Pun Pun Thai Food). Petición de 200+ residentes al gobernador. Respuesta israelí: reseñas negativas masivas de represalia.' },
+    ],
+    popup: {
+      title: 'Koh Phangan',
+      zone: 'Distrito de Koh Phangan, Provincia de Surat Thani',
+      stats: [
+        { label: 'Empresas totales', value: '4.761' },
+        { label: 'Empresas con capital extranjero', value: '3.213 (67,5%)' },
+        { label: 'Empresas israelíes', value: '~720 (22% del total extranjero)' },
+        { label: 'Familias israelíes establecidas', value: '2.600 (Senado)' },
+        { label: 'Tierras bajo nominees israelíes', value: '41% (afirmación Senado)' },
+        { label: 'Tierras tituladas oficiales', value: '38% de la isla' },
+        { label: 'Extranjeros en tierras tituladas', value: '~6% (Dept. Tierras)' },
+        { label: 'Títulos incautados', value: '37 (~150M THB)' },
+        { label: 'Órdenes de arresto', value: '45 (27 detenidos)' },
+        { label: 'Rai ilegalmente retenidos', value: '~80 rai' },
+      ],
+      flags: ['environmental', 'community', 'enforcement'],
+      sources: [
+        { name: 'Thai Examiner', url: 'https://www.thaiexaminer.com/thai-news-foreigners/2026/05/14/anutin-visits-koh-phangan-as-islands-nominee-crackdown-shows-68-of-firms-with-foreign-ownership-links/' },
+        { name: 'The Nation', url: 'https://www.nationthailand.com/news/general/40066179' },
+        { name: 'Malay Mail/Khaosod', url: 'https://www.malaymail.com/amp/news/life/2025/10/20/trouble-in-paradise-koh-phangans-hidden-villas-spark-foreign-ownership-and-forest-damage-probe-in-thailand/195301' },
+        { name: 'The Nation (Fase 2)', url: 'https://www.nationthailand.com/news/general/40066566' },
+      ],
+    }
+  },
+  {
+    id: 'koh-samui',
+    name: 'Koh Samui',
+    coords: [9.5018, 99.9402],
+    zoom: 11,
+    type: 'mixed',
+    dateFrom: '2023-01',
+    companiesTotal: 12050,
+    companiesForeign: 8213,
+    foreignPct: 68.2,
+    israeliPct: 15,
+    israeliCompanies: null,
+    israeliFamilies: null,
+    landPctClaim: null,
+    landPctOfficial: null,
+    landTitledPct: null,
+    deedsSeized: null,
+    deedsValue: null,
+    arrestWarrants: 59,
+    arrested: 48,
+    illegalRai: 49,
+    keyDate: '2026-07',
+    keyEvent: 'Redada DSI/DBD — 5 redes de nominees, 100+ empresas en una dirección',
+    flags: ['environmental', 'enforcement'],
+    markerType: 'israeli',
+    subzones: [
+      { name: 'Bo Phut — Villa de lujo china', coords: [9.5300, 100.0200], type: 'residential', dateFrom: '2023-06', flags: ['enforcement'], desc: '15 parcelas contiguas, 98 rai, 1.570M THB. Inversores chinos dirigiendo construcción. 5 empresas afiliadas.' },
+      { name: 'Bo Phut — Despacho de abogados (150+ empresas)', coords: [9.5350, 100.0150], type: 'commercial', dateFrom: '2023-01', flags: ['enforcement'], desc: 'Despacho vinculado a 150+ empresas, 795M THB en bienes raíces. 103 empresas registradas en la misma dirección. Empleados como accionistas proxy.' },
+      { name: 'Empresa "N" — Hotel israelí-tailandés', coords: [9.5000, 99.9500], type: 'commercial', dateFrom: '2013-01', flags: ['enforcement'], desc: 'Hotel operando desde 2013, accionistas tailandeses e israelíes. Activos >2.000M THB. Auditoría de capacidad financiera de accionistas tailandeses.' },
+      { name: 'Chaweng Noi — Seabreeze Villa', coords: [9.4950, 100.0300], type: 'residential', dateFrom: '2024-06', flags: ['environmental', 'enforcement'], desc: 'Villa de lujo con presunta invasión de ladera. Redada febrero 2025. 160+ empresas vinculadas a través de despacho de abogados.' },
+      { name: 'Empresa "L" — Construcción y resort', coords: [9.5100, 99.9700], type: 'commercial', dateFrom: '2023-09', flags: ['enforcement'], desc: '6 corporaciones en misma dirección. Activos de tierras >30M THB. Misma dirección compartida por múltiples entidades.' },
+      { name: 'Gal Bieber — Arresto (15 ago 2026)', coords: [9.5200, 100.0000], type: 'mixed', dateFrom: '2026-08', flags: ['enforcement'], desc: 'Desarrollador inmobiliario israelí arrestado con 19 órdenes judiciales. Estructura corporativa multicapa con nominees tailandeses. Escuela internacional sin licencia, villas de lujo para clientes israelíes. 61 empresas, 42 parcelas, 1.500M THB.' },
+      { name: 'Caso 364/2569 — Amenazas a comerciante (5 ago 2026)', coords: [9.5000, 99.9400], type: 'commercial', dateFrom: '2026-08', flags: ['community', 'enforcement'], desc: 'Israelí arrestado por amenazar a comerciante local para forzar cierre de su negocio. Condena: 5.000 THB + 2 años suspensión. Viceministro Worasit: "la ley aplica a todos, sin base étnica".' },
+      { name: 'Operativo ampliado — 875 empresas marcadas', coords: [9.5100, 99.9600], type: 'mixed', dateFrom: '2026-08', flags: ['enforcement'], desc: 'De 12.906 empresas examinadas, 875 marcadas como sospechosas de nominees. 60 casos abiertos, 88 sospechosos (26 tailandeses, 62 extranjeros). 20 israelíes con órdenes de arresto (mayor grupo extranjero).' },
+    ],
+    popup: {
+      title: 'Koh Samui',
+      zone: 'Distrito de Koh Samui, Provincia de Surat Thani',
+      stats: [
+        { label: 'Empresas totales', value: '12.050' },
+        { label: 'Empresas con capital extranjero', value: '8.213 (68,2%)' },
+        { label: 'Inversores franceses', value: '~24% (mayor grupo)' },
+        { label: 'Empresas nominees identificadas', value: '50 (Senado)' },
+        { label: 'Empresas en una sola dirección', value: '100+ (Bo Phut)' },
+        { label: 'Empresas en riesgo', value: '3.500 (<50% extranjero)' },
+        { label: 'Valor de villas chinas incautadas', value: '1.570M THB (98 rai)' },
+        { label: 'Hotel israelí-tailandés', value: '>2.000M THB en activos' },
+        { label: 'Empresas examinadas (ago 2026)', value: '12.906 — 875 marcadas' },
+        { label: 'Órdenes de arresto israelíes', value: '20 (mayor grupo extranjero)' },
+        { label: 'Gal Bieber (19 órdenes)', value: 'Escuela sin licencia, villas israelíes' },
+        { label: 'Caso amenazas comerciante', value: '364/2569 — 5.000 THB + 2 años susp.' },
+      ],
+      flags: ['environmental', 'enforcement'],
+      sources: [
+        { name: 'The Nation', url: 'https://www.nationthailand.com/news/general/40068623' },
+        { name: 'The Nation (red DSI)', url: 'https://www.nationthailand.com/news/general/40068510' },
+        { name: 'Asia Lifestyle Magazine', url: 'https://www.asialifestylemagazine.com/koh-samui-villa-ownership-what-thailands-nominee-crackdown-changes-for-foreign-buyers/' },
+        { name: 'Rawai News (Senado)', url: 'https://www.rawai.com/senate-deputy-warns-of-crackdown-on-foreign-nominee-phuket/' },
+        { name: 'Jerusalem Post (Gal Bieber)', url: 'https://www.jpost.com/israel-news/article-906016' },
+        { name: 'Wochenblitz (caso 364)', url: 'https://wochenblitzenglish.com/israeli-held-after-threats-to-koh-samui-shop-owner/' },
+      ],
+    }
+  },
+  {
+    id: 'phuket',
+    name: 'Phuket',
+    coords: [7.8804, 98.3923],
+    zoom: 11,
+    type: 'mixed',
+    dateFrom: '2023-01',
+    companiesTotal: 11000,
+    companiesForeign: 4400,
+    foreignPct: 40,
+    israeliPct: null,
+    israeliCompanies: null,
+    israeliFamilies: null,
+    landPctClaim: null,
+    landPctOfficial: null,
+    landTitledPct: null,
+    deedsSeized: 89,
+    deedsValue: 1053,
+    arrestWarrants: 59,
+    arrested: 48,
+    illegalRai: 49,
+    keyDate: '2026-07',
+    keyEvent: 'Modelo Phuket — demolición Hat Nui, 400+ parcelas ilegales, Chabad House Patong',
+    flags: ['environmental', 'community', 'enforcement'],
+    markerType: 'israeli',
+    subzones: [
+      { name: 'Hat Nui / Nui Beach — Demolición', coords: [7.8200, 98.3100], type: 'commercial', dateFrom: '2023-01', flags: ['environmental', 'community', 'enforcement'], desc: '50 estructuras demolidas, 18 rai, ~2.000M THB. Reserva Forestal Nacional Nakkerd. Acceso a playa bloqueado durante 12+ años. Pescadores agredidos y disparados. Tasas de entrada ilegales cobradas.' },
+      { name: 'Chabad House — Patong', coords: [7.8960, 98.2960], type: 'commercial', dateFrom: '2023-06', flags: ['community', 'enforcement'], desc: 'Confrontación: "¿No saben que esto es territorio israelí?". 361+ negocios en investigación. ISOC Región 4 monitoreando. Centro religioso y de alojamiento.' },
+      { name: 'Freedom Beach', coords: [7.8700, 98.2800], type: 'commercial', dateFrom: '2023-03', flags: ['environmental', 'enforcement'], desc: '22 estructuras marcadas para demolición, 9 rai de bosque protegido Khao Nak Kerd. Ocupación comercial ilegal de costa protegida.' },
+      { name: 'Sirinat National Park — Hoteles ilegales', coords: [8.0500, 98.2800], type: 'commercial', dateFrom: '2023-01', flags: ['environmental', 'enforcement'], desc: '2 grandes hoteles con disputas legales de 10+ años. 4-5 parcelas dentro del parque nacional, una de 13 rai. Avisos de demolición de 1 mes.' },
+      { name: 'Cherngtalay / Bang Tao — Villas de lujo', coords: [7.9600, 98.3000], type: 'residential', dateFrom: '2024-01', flags: ['enforcement'], desc: '50+ villas de lujo bajo investigación en primer semestre 2026. Estructuras nominee, riesgo de deportación y decomiso.' },
+      { name: 'Andaman — Operativo Fase 3', coords: [7.9000, 98.4000], type: 'mixed', dateFrom: '2026-06', flags: ['enforcement'], desc: '76 empresas registradas, 89 parcelas, 49 rai, 1.053B THB. 59 órdenes de arresto (28 tailandeses, 31 extranjeros). 11 israelíes arrestados.' },
+      { name: '100+ empresas israelíes con nacionalidad TH (7 ago 2026)', coords: [7.8900, 98.3000], type: 'mixed', dateFrom: '2026-08', flags: ['enforcement'], desc: 'Israelíes con ciudadanía tailandesa vinculados a 100+ empresas. Ingresos >5.000M THB. Viceministro Phonphir ordenó investigación de flujos financieros.' },
+      { name: 'Negocios israelíes que niegan servicio a tailandeses (17 ago 2026)', coords: [7.8960, 98.2960], type: 'commercial', dateFrom: '2026-08', flags: ['community', 'enforcement'], desc: 'Restaurante israelí investigado por negar servicio a tailandeses. Agencia de viajes exclusiva para israelíes, tienda con anuncios en hebreo. Vicegobernador: "no se debe discriminar".' },
+    ],
+    popup: {
+      title: 'Phuket',
+      zone: 'Provincia de Phuket',
+      stats: [
+        { label: 'Empresas con vínculos extranjeros', value: '~11.000 (40% del total)' },
+        { label: 'Entidades en riesgo (NACC)', value: '~4.000' },
+        { label: 'Empresas bajo revisión especial', value: '600+' },
+        { label: 'Negocios alto riesgo objetivo', value: '361+' },
+        { label: 'Parcelas ilegales extranjeras', value: '400+' },
+        { label: 'Israelíes arrestados (Fase 3)', value: '11' },
+        { label: 'Parcelas incautadas (Fase 3)', value: '89 (49 rai, 1.053B THB)' },
+        { label: 'Estructuras demolidas Hat Nui', value: '50 (18 rai, ~2B THB)' },
+        { label: 'Sitios adicionales objetivo', value: '300+' },
+        { label: 'Empresas israelíes con nac. TH (ago 2026)', value: '100+ — ingresos >5.000M THB' },
+        { label: 'Negocios que discriminan tailandeses', value: 'Investigación abierta 17 ago 2026' },
+      ],
+      flags: ['environmental', 'community', 'enforcement'],
+      sources: [
+        { name: 'The Nation (Chabad)', url: 'https://www.nationthailand.com/news/general/40069062' },
+        { name: 'Thairath (Hat Nui)', url: 'https://en.thairath.co.th/scoop/theissue/2947451' },
+        { name: 'The Nation (Andaman)', url: 'https://www.nationthailand.com/news/general/40067662' },
+        { name: 'Thairath (NACC)', url: 'https://en.thairath.co.th/news/politic/2947767' },
+        { name: 'Thairath (100+ empresas)', url: 'https://en.thairath.co.th/news/politic/2951244' },
+        { name: 'Rawai (discriminación TH)', url: 'https://www.rawai.com/phuket-investigates-complaints-over-israeli-run-businesses/' },
+      ],
+    }
+  },
+  {
+    id: 'pai',
+    name: 'Pai',
+    coords: [19.3596, 98.4422],
+    zoom: 12,
+    type: 'mixed',
+    dateFrom: '2024-01',
+    companiesTotal: null,
+    companiesForeign: null,
+    foreignPct: null,
+    israeliPct: null,
+    israeliCompanies: null,
+    israeliFamilies: 3000,
+    landPctClaim: null,
+    landPctOfficial: null,
+    landTitledPct: null,
+    deedsSeized: null,
+    deedsValue: null,
+    arrestWarrants: null,
+    arrested: null,
+    illegalRai: null,
+    keyDate: '2025-02',
+    keyEvent: 'Polémica "Tierra Prometida" — 4 israelíes deportados, Chabad House controvertido',
+    flags: ['community'],
+    markerType: 'suspected',
+    subzones: [
+      { name: 'Centro de Pai — Chabad House', coords: [19.3580, 98.4410], type: 'commercial', dateFrom: '2024-06', flags: ['community'], desc: 'Construcción de Chabad House genera tensión comunitaria. Estructura semipermanente, actividades religiosas. Debate sobre consentimiento local. Centro registrado bajo Chabad of Thailand Foundation.' },
+      { name: 'Zonas agrícolas — compras mediante nominees', coords: [19.3700, 98.4500], type: 'residential', dateFrom: '2024-01', flags: ['community'], desc: 'Denuncias de compra de tierras por extranjeros mediante nominees. Gran parte del terreno es reserva forestal protegida, limitando asentamiento a gran escala. Agricultores locales se sienten marginados.' },
+      { name: 'Pai Hospital — incidente', coords: [19.3650, 98.4380], type: 'commercial', dateFrom: '2025-02', flags: ['enforcement'], desc: '4 israelíes deportados por conducta inapropiada en hospital. Policía dio plazo de 7 días para investigar actividades ilegales de extranjeros.' },
+    ],
+    popup: {
+      title: 'Pai',
+      zone: 'Distrito de Pai, Provincia de Mae Hong Son',
+      stats: [
+        { label: 'Familias israelíes (Senado)', value: '3.000' },
+        { label: 'Visitantes israelíes anuales', value: '30.000 (Senado) / 2.000-3.000 (policía)' },
+        { label: 'Chabad House', value: 'Construido — controversia comunitaria' },
+        { label: 'Israelíes deportados', value: '4 (incidente hospital)' },
+        { label: 'Reserva forestal', value: 'Mayoría del terreno protegido' },
+        { label: 'Denuncias de nominees', value: 'Bajo investigación' },
+      ],
+      flags: ['community'],
+      sources: [
+        { name: 'Channel NewsAsia', url: 'https://www.channelnewsasia.com/asia/thailand-northern-pai-israeli-paetongtarn-4946631' },
+        { name: 'The Nation (ji-ji)', url: 'https://jen.jiji.com/jc/eng_agt?g=nation&k=20250220NATION-40046513' },
+        { name: 'Rawai News (Senado)', url: 'https://www.rawai.com/senate-deputy-warns-of-crackdown-on-foreign-nominee-phuket/' },
+      ],
+    }
+  },
+  {
+    id: 'pattaya',
+    name: 'Pattaya',
+    coords: [12.9236, 100.8825],
+    zoom: 12,
+    type: 'mixed',
+    dateFrom: '2026-08',
+    companiesTotal: null,
+    companiesForeign: null,
+    foreignPct: null,
+    israeliPct: null,
+    israeliCompanies: null,
+    israeliFamilies: null,
+    landPctClaim: null,
+    landPctOfficial: null,
+    landTitledPct: null,
+    deedsSeized: null,
+    deedsValue: null,
+    arrestWarrants: null,
+    arrested: null,
+    illegalRai: null,
+    keyDate: '2026-08',
+    keyEvent: 'Redada 21 ago 2026 — red israelí desmantelada, activos de cientos de millones',
+    flags: ['enforcement'],
+    markerType: 'israeli',
+    subzones: [
+      { name: 'KT International Law Office', coords: [12.9300, 100.8800], type: 'commercial', dateFrom: '2026-08', flags: ['enforcement'], desc: 'Despacho de abogados que actuaba como agente para nominar empleados tailandeses como accionistas proxy de extranjeros. Uno de los 3 objetivos de la redada.' },
+      { name: 'Chilla Avenue Pattaya Hotel', coords: [12.9250, 100.8850], type: 'commercial', dateFrom: '2010-01', flags: ['enforcement'], desc: 'Hotel con estructura accionarial compleja. Investigado por ocultar propiedad extranjera mediante nominees tailandeses. Operando desde 2010.' },
+      { name: 'Cozy Beach View Co. Ltd.', coords: [12.9200, 100.8800], type: 'mixed', dateFrom: '2010-01', flags: ['enforcement'], desc: 'Empresa con inversores israelíes como directores. Ocultó propiedad registrando acciones bajo nombres tailandeses desde 2010. Vinculada a Lotus Paradise Development Co. Ltd. Activos de cientos de millones.' },
+    ],
+    popup: {
+      title: 'Pattaya',
+      zone: 'Ciudad de Pattaya, Distrito de Bang Lamung, Provincia de Chonburi',
+      stats: [
+        { label: 'Fecha redada', value: '21 agosto 2026' },
+        { label: 'Liderazgo', value: 'Viceministro Worasit + Min. Justicia' },
+        { label: 'Objetivos', value: '3 ubicaciones' },
+        { label: 'Red principal', value: 'Cozy Beach View Co. Ltd. (israelí)' },
+        { label: 'Operación desde', value: '2010' },
+        { label: 'Activos incautados', value: 'Cientos de millones THB' },
+        { label: 'Agente nominee', value: 'KT International Law Office' },
+        { label: 'Ley aplicada', value: 'Foreign Business Act 1999' },
+      ],
+      flags: ['enforcement'],
+      sources: [
+        { name: 'Thairath (redada Pattaya)', url: 'https://en.thairath.co.th/news/politic/2954367' },
+      ],
+    }
+  },
+];
+
+// ===== MAP INIT =====
+const map = L.map('map', { zoomControl: true, scrollWheelZoom: true }).setView([10.0, 99.0], 6);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO',
+  subdomains: 'abcd',
+  maxZoom: 19
+}).addTo(map);
+
+// Override tiles based on theme
+function updateMapTheme() {
+  map.eachLayer(layer => {
+    if (layer instanceof L.TileLayer) {
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+      const url = isDark
+        ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+        : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png';
+      layer.setUrl(url);
+    }
+  });
+}
+
+// ===== MARKERS =====
+const markerColors = {
+  israeli: '#dd6974',
+  environmental: '#bb653b',
+  enforcement: '#d163a7',
+  suspected: '#4f98a3',
+};
+
+const flagLabels = {
+  environmental: { label: 'Ambiental', class: 'badge-env' },
+  community: { label: 'Exclusión', class: 'badge-comm' },
+  enforcement: { label: 'Operativo', class: 'badge-raid' },
+};
+
+const typeLabels = {
+  residential: { label: 'Residencial', class: 'badge-res' },
+  commercial: { label: 'Comercial', class: 'badge-com' },
+  mixed: { label: 'Mixto', class: 'badge-mixed' },
+};
+
+function createMarkerIcon(color) {
+  return L.divIcon({
+    className: 'custom-marker',
+    html: `<div class="marker-icon" style="background: ${color};"></div>`,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+  });
+}
+
+function buildPopupContent(zone) {
+  const statsHtml = zone.popup.stats.map(s =>
+    `<div class="popup-stat"><span class="popup-stat-label">${s.label}</span><span class="popup-stat-value">${s.value}</span></div>`
+  ).join('');
+
+  const flagsHtml = zone.popup.flags.map(f =>
+    `<span class="badge ${flagLabels[f].class}">${flagLabels[f].label}</span>`
+  ).join('');
+
+  const sourcesHtml = zone.popup.sources.map(s =>
+    `<a href="${s.url}" target="_blank" rel="noopener">${s.name}</a>`
+  ).join(' · ');
+
+  return `
+    <div class="popup-title">${zone.popup.title}</div>
+    <div class="popup-zone">${zone.popup.zone}</div>
+    ${statsHtml}
+    <div class="popup-flags">${flagsHtml}</div>
+    <div class="popup-source">Fuentes: ${sourcesHtml}</div>
+  `;
+}
+
+function buildSubzonePopup(subzone, zoneName) {
+  const flagsHtml = subzone.flags.map(f =>
+    `<span class="badge ${flagLabels[f].class}">${flagLabels[f].label}</span>`
+  ).join('');
+
+  const typeLabel = typeLabels[subzone.type] || typeLabels.mixed;
+
+  return `
+    <div class="popup-title">${subzone.name}</div>
+    <div class="popup-zone">${zoneName} · <span class="badge ${typeLabel.class}">${typeLabel.label}</span></div>
+    <p style="font-size: 13px; color: var(--color-text-muted); margin-top: 8px;">${subzone.desc}</p>
+    <div class="popup-flags">${flagsHtml}</div>
+  `;
+}
+
+// Store all markers for filtering
+const allMarkers = [];
+const allSubMarkers = [];
+
+zones.forEach(zone => {
+  // Main zone marker
+  const mainColor = zone.markerType === 'israeli' ? markerColors.israeli : markerColors.suspected;
+  const mainMarker = L.marker(zone.coords, { icon: createMarkerIcon(mainColor) })
+    .bindPopup(buildPopupContent(zone), { maxWidth: 320 });
+  mainMarker.zoneData = zone;
+  mainMarker.isMain = true;
+  allMarkers.push(mainMarker);
+
+  // Subzone markers
+  zone.subzones.forEach(sub => {
+    let subColor = markerColors.suspected;
+    if (sub.flags.includes('environmental')) subColor = markerColors.environmental;
+    else if (sub.flags.includes('enforcement')) subColor = markerColors.enforcement;
+    else if (sub.flags.includes('community')) subColor = markerColors.notification || '#dd6974';
+
+    const subMarker = L.marker(sub.coords, { icon: createMarkerIcon(subColor), opacity: 0.85 })
+      .bindPopup(buildSubzonePopup(sub, zone.name), { maxWidth: 300 });
+    subMarker.zoneId = zone.id;
+    subMarker.subzoneData = sub;
+    subMarker.isMain = false;
+    allSubMarkers.push(subMarker);
+  });
+});
+
+// Add all markers initially
+const markerLayer = L.layerGroup(allMarkers).addTo(map);
+const subMarkerLayer = L.layerGroup(allSubMarkers).addTo(map);
+
+// ===== ZONE CIRCLES =====
+const zoneCircles = [];
+zones.forEach(zone => {
+  let radius = 5000;
+  if (zone.id === 'pai') radius = 3000;
+  if (zone.id === 'phuket') radius = 8000;
+
+  const circle = L.circle(zone.coords, {
+    radius: radius,
+    color: zone.markerType === 'israeli' ? '#dd6974' : '#4f98a3',
+    weight: 2,
+    opacity: 0.5,
+    fillColor: zone.markerType === 'israeli' ? '#dd6974' : '#4f98a3',
+    fillOpacity: 0.06,
+  });
+  zoneCircles.push({ circle, zoneId: zone.id });
+});
+const circleLayer = L.layerGroup(zoneCircles.map(zc => zc.circle)).addTo(map);
+
+// ===== FILTERING =====
+const filterZone = document.getElementById('filter-zone');
+const filterType = document.getElementById('filter-type');
+const filterDate = document.getElementById('filter-date');
+const btnReset = document.getElementById('btn-reset');
+const toggleChips = document.querySelectorAll('.toggle-chip');
+
+let activeFlags = new Set(['environmental', 'community', 'enforcement']);
+
+function parseDate(dateStr) {
+  if (!dateStr) return new Date('2023-01-01');
+  return new Date(dateStr + '-01');
+}
+
+function applyFilters() {
+  const zoneVal = filterZone.value;
+  const typeVal = filterType.value;
+  const dateVal = filterDate.value ? parseDate(filterDate.value) : parseDate('2023-01');
+
+  // Filter main markers
+  allMarkers.forEach(m => {
+    const z = m.zoneData;
+    const zoneMatch = zoneVal === 'all' || z.id === zoneVal;
+    const typeMatch = typeVal === 'all' || z.type === typeVal;
+    const dateMatch = parseDate(z.dateFrom) >= dateVal;
+    const flagMatch = z.flags.some(f => activeFlags.has(f));
+
+    if (zoneMatch && typeMatch && dateMatch && flagMatch) {
+      if (!map.hasLayer(m)) markerLayer.addLayer(m);
+    } else {
+      if (map.hasLayer(m)) markerLayer.removeLayer(m);
+    }
+  });
+
+  // Filter subzone markers
+  allSubMarkers.forEach(m => {
+    const sub = m.subzoneData;
+    const zoneMatch = zoneVal === 'all' || m.zoneId === zoneVal;
+    const typeMatch = typeVal === 'all' || sub.type === typeVal;
+    const dateMatch = parseDate(sub.dateFrom) >= dateVal;
+    const flagMatch = sub.flags.some(f => activeFlags.has(f));
+
+    if (zoneMatch && typeMatch && dateMatch && flagMatch) {
+      if (!map.hasLayer(m)) subMarkerLayer.addLayer(m);
+    } else {
+      if (map.hasLayer(m)) subMarkerLayer.removeLayer(m);
+    }
+  });
+
+  // Filter circles
+  zoneCircles.forEach(zc => {
+    const zoneMatch = zoneVal === 'all' || zc.zoneId === zoneVal;
+    if (zoneMatch) {
+      if (!map.hasLayer(zc.circle)) circleLayer.addLayer(zc.circle);
+    } else {
+      if (map.hasLayer(zc.circle)) circleLayer.removeLayer(zc.circle);
+    }
+  });
+
+  // Auto-zoom to filtered zone
+  if (zoneVal !== 'all') {
+    const zone = zones.find(z => z.id === zoneVal);
+    if (zone) map.flyTo(zone.coords, zone.zoom, { duration: 1 });
+  } else {
+    map.flyTo([10.0, 99.0], 6, { duration: 1 });
+  }
+
+  // Update data table
+  updateTable(zoneVal, typeVal, dateVal);
+}
+
+function updateTable(zoneVal, typeVal, dateVal) {
+  const tbody = document.getElementById('data-table-body');
+  const filtered = zones.filter(z => {
+    const zoneMatch = zoneVal === 'all' || z.id === zoneVal;
+    const typeMatch = typeVal === 'all' || z.type === typeVal;
+    const dateMatch = parseDate(z.dateFrom) >= dateVal;
+    return zoneMatch && typeMatch && dateMatch;
+  });
+
+  tbody.innerHTML = filtered.map(z => {
+    const typeBadge = `<span class="badge ${typeLabels[z.type].class}">${typeLabels[z.type].label}</span>`;
+    const flagBadges = z.flags.map(f => `<span class="badge ${flagLabels[f].class}">${flagLabels[f].label}</span>`).join(' ');
+    const companies = z.companiesForeign ? `${z.companiesForeign.toLocaleString('es')} / ${z.companiesTotal.toLocaleString('es')} (${z.foreignPct}%)` : '—';
+    const israeli = z.israeliFamilies ? `${z.israeliFamilies.toLocaleString('es')} familias` :
+                   z.israeliCompanies ? `${z.israeliCompanies} empresas (${z.israeliPct}%)` : '—';
+    const sourceLinks = z.popup.sources.slice(0, 2).map(s =>
+      `<a href="${s.url}" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: none;">${s.name}</a>`
+    ).join(', ');
+    return `<tr>
+      <td><strong>${z.name}</strong></td>
+      <td>${typeBadge}</td>
+      <td>${companies}</td>
+      <td>${israeli}</td>
+      <td>${flagBadges}</td>
+      <td>${z.keyDate}</td>
+      <td style="font-size: 12px;">${sourceLinks}</td>
+    </tr>`;
+  }).join('');
+}
+
+filterZone.addEventListener('change', applyFilters);
+filterType.addEventListener('change', applyFilters);
+filterDate.addEventListener('change', applyFilters);
+btnReset.addEventListener('click', () => {
+  filterZone.value = 'all';
+  filterType.value = 'all';
+  filterDate.value = '2023-01';
+  activeFlags = new Set(['environmental', 'community', 'enforcement']);
+  toggleChips.forEach(c => c.classList.add('active'));
+  applyFilters();
+});
+
+toggleChips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    const flag = chip.dataset.flag;
+    if (activeFlags.has(flag)) {
+      activeFlags.delete(flag);
+      chip.classList.remove('active');
+    } else {
+      activeFlags.add(flag);
+      chip.classList.add('active');
+    }
+    applyFilters();
+  });
+});
+
+// ===== THEME TOGGLE =====
+(function() {
+  const toggle = document.querySelector('[data-theme-toggle]');
+  const root = document.documentElement;
+  let dark = matchMedia('(prefers-color-scheme:dark)').matches;
+  root.setAttribute('data-theme', dark ? 'dark' : 'light');
+
+  function setIcon() {
+    toggle.innerHTML = dark
+      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+  }
+  setIcon();
+
+  toggle.addEventListener('click', () => {
+    dark = !dark;
+    root.setAttribute('data-theme', dark ? 'dark' : 'light');
+    setIcon();
+    updateMapTheme();
+  });
+})();
+
+// ===== INIT =====
+updateTable('all', 'all', parseDate('2023-01'));
+</script>
+
+<script data-pplx-inline-edit>
+(function () {
+  if (window === window.top) return;
+
+  const allowedParentOrigins = ["https://www.perplexity.ai","https://perplexity.ai","https://testing.perplexity.ai","https://staging.perplexity.ai","https://*.preview.i.perplexity.ai","http://perplexity.localhost","http://localhost:1420","http://127.0.0.1:1420","http://localhost:3000","http://127.0.0.1:3000","http://localhost:5173","http://127.0.0.1:5173"];
+  const MAX_FONT_BYTES = 500 * 1024;
+  const MAX_TOTAL_FONT_BYTES = 2 * 1024 * 1024;
+  let scrollForwarding = false;
+  let scrollRaf = 0;
+  let trustedTopOrigin = null;
+
+  // Allow entries like "https://*.preview.i.perplexity.ai" — the wildcard
+  // matches a single DNS label (no dots), so "https://*.foo" cannot stretch
+  // across multiple labels.
+  function matchesAllowedOrigin(origin) {
+    if (!origin) return false;
+    for (const entry of allowedParentOrigins) {
+      if (!entry.includes("*")) {
+        if (entry === origin) return true;
+        continue;
+      }
+      const pattern = new RegExp(
+        "^" +
+          entry.replace(/[.+?^${}()|[\]\\]/g, "\\$&").replace(/\*/g, "[^.]+") +
+          "$",
+      );
+      if (pattern.test(origin)) return true;
+    }
+    return false;
+  }
+
+  // Trust decision: when the sender is same-origin-visible (event.origin is a
+  // real origin like https://www.perplexity.ai) we trust event.origin directly.
+  // When event.origin is "null" (opaque broker srcdoc), we fall back to the
+  // broker's stamped `parentOrigin` to identify the top window. The fallback
+  // is claim-only — we rely on the browser's native `targetOrigin` enforcement
+  // on the response path (see postToTrustedTop) to ensure replies can't be
+  // delivered to anyone but the actual top window of that claimed origin.
+  function getTrustedParentOrigin(event) {
+    const forwardedParentOrigin =
+      typeof event.data.parentOrigin === "string" ? event.data.parentOrigin : null;
+    const parentOrigin = event.origin === "null" ? forwardedParentOrigin : event.origin;
+    return matchesAllowedOrigin(parentOrigin) ? parentOrigin : null;
+  }
+
+  // All responses go to window.top with targetOrigin = the allowlisted origin.
+  // An attacker that iframes us inside their own null-origin broker can claim
+  // any parentOrigin they like, but the browser will drop the reply whenever
+  // the real top's origin doesn't match — so the screenshot never leaves.
+  function postToTrustedTop(message) {
+    if (!trustedTopOrigin) return;
+    try {
+      window.top.postMessage(message, trustedTopOrigin);
+    } catch (_error) {}
+  }
+
+  function inlineAll(original, clone) {
+    if (original.nodeType !== 1 || clone.nodeType !== 1) return;
+
+    try {
+      const computedStyle = getComputedStyle(original);
+      // cssText on a computed style is the serialized declaration in modern
+      // Chromium/Safari — a single read beats enumerating ~400 longhand
+      // properties. Firefox returns "" here, so we fall back on empty.
+      const serialized = computedStyle.cssText;
+      if (serialized) {
+        clone.style.cssText = serialized;
+      } else {
+        const parts = new Array(computedStyle.length);
+        for (let index = 0; index < computedStyle.length; index += 1) {
+          const property = computedStyle[index];
+          parts[index] = `${property}:${computedStyle.getPropertyValue(property)};`;
+        }
+        clone.style.cssText = parts.join("");
+      }
+    } catch (_error) {}
+
+    const originalChildren = original.children;
+    const clonedChildren = clone.children;
+    for (
+      let index = 0;
+      index < originalChildren.length && index < clonedChildren.length;
+      index += 1
+    ) {
+      inlineAll(originalChildren[index], clonedChildren[index]);
+    }
+  }
+
+  function extractFontUrl(srcValue) {
+    const matches = [
+      ...srcValue.matchAll(
+        /url\(["']?([^"')]+)["']?\)(?:\s*format\(["']?([^"')]+)["']?\))?/gi,
+      ),
+    ];
+    if (matches.length === 0) return null;
+    const woff2 = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff2"));
+    if (woff2) return woff2[1];
+    const woff = matches.find((m) => m[2] && m[2].toLowerCase().includes("woff"));
+    if (woff) return woff[1];
+    return matches[0][1];
+  }
+
+  // Cache resolved font URL -> data URI across captures. Fonts on a page
+  // essentially never change, and a batch run emits multiple captures back to
+  // back — without this we'd refetch + re-base64 every time.
+  const fontDataUriCache = new Map();
+  const SRC_DECLARATION_RE = /src\s*:\s*[^;}]+/i;
+
+  async function fetchAsDataUri(url) {
+    if (fontDataUriCache.has(url)) return fontDataUriCache.get(url);
+    let dataUri = null;
+    try {
+      const response = await fetch(url, { mode: "cors", credentials: "omit" });
+      if (response.ok) {
+        const blob = await response.blob();
+        if (blob.size <= MAX_FONT_BYTES) {
+          dataUri = await new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () =>
+              resolve(typeof reader.result === "string" ? reader.result : null);
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+    } catch (_error) {
+      dataUri = null;
+    }
+    fontDataUriCache.set(url, dataUri);
+    return dataUri;
+  }
+
+  function collectFontFaceRuleTexts() {
+    const rules = [];
+    for (const sheet of document.styleSheets) {
+      let cssRules;
+      try {
+        cssRules = sheet.cssRules;
+      } catch (_error) {
+        continue;
+      }
+      if (!cssRules) continue;
+      for (const rule of cssRules) {
+        const cssText = rule.cssText || "";
+        if (cssText.startsWith("@font-face")) rules.push(cssText);
+      }
+    }
+    return rules;
+  }
+
+  async function buildInlinedFontCss() {
+    const ruleTexts = collectFontFaceRuleTexts();
+    if (ruleTexts.length === 0) return null;
+
+    const resolved = ruleTexts.map((cssText) => {
+      if (!SRC_DECLARATION_RE.test(cssText)) return null;
+      const srcMatch = cssText.match(/src\s*:\s*([^;}]+)[;}]/i);
+      if (!srcMatch) return null;
+      const url = extractFontUrl(srcMatch[1]);
+      if (!url) return null;
+      try {
+        return { cssText, url: new URL(url, document.baseURI).href };
+      } catch (_error) {
+        return null;
+      }
+    });
+
+    const dataUris = await Promise.all(
+      resolved.map((entry) => (entry ? fetchAsDataUri(entry.url) : Promise.resolve(null))),
+    );
+
+    const inlined = [];
+    let totalBytes = 0;
+    for (let index = 0; index < resolved.length; index += 1) {
+      const entry = resolved[index];
+      const dataUri = dataUris[index];
+      if (!entry || !dataUri) continue;
+      const approxBytes = dataUri.length * 0.75;
+      if (totalBytes + approxBytes > MAX_TOTAL_FONT_BYTES) break;
+      totalBytes += approxBytes;
+      inlined.push(entry.cssText.replace(SRC_DECLARATION_RE, `src: url("${dataUri}")`));
+    }
+    return inlined.length > 0 ? inlined.join("\n") : null;
+  }
+
+  function stripExternal(clone) {
+    const images = clone.querySelectorAll("img");
+    for (let index = 0; index < images.length; index += 1) {
+      const src = images[index].getAttribute("src");
+      if (src && !src.startsWith("data:")) images[index].removeAttribute("src");
+    }
+
+    const elements = clone.querySelectorAll("*");
+    for (let index = 0; index < elements.length; index += 1) {
+      const style = elements[index].style.cssText;
+      if (style && style.includes("url(")) {
+        elements[index].style.cssText = style.replace(
+          /url\(["']?(?!data:)[^)"']*["']?\)/gi,
+          "none",
+        );
+      }
+    }
+  }
+
+  function emitScroll() {
+    scrollRaf = 0;
+    if (!scrollForwarding) return;
+    postToTrustedTop({
+      type: "INLINE_EDIT_SCROLL",
+      scrollX: window.scrollX,
+      scrollY: window.scrollY,
+    });
+  }
+
+  window.addEventListener(
+    "scroll",
+    function () {
+      if (!scrollForwarding || scrollRaf) return;
+      scrollRaf = requestAnimationFrame(emitScroll);
+    },
+    { passive: true, capture: true },
+  );
+
+  async function handleCaptureRequest(event) {
+    const requestId = event.data.requestId;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    function postResult(dataUrl) {
+      postToTrustedTop({
+        type: "INLINE_EDIT_SCREENSHOT_RESULT",
+        requestId,
+        dataUrl,
+        scrollX,
+        scrollY,
+      });
+    }
+
+    try {
+      // Wait for any pending web fonts to resolve so both inline metrics and
+      // the @font-face inlining below see the same loaded faces.
+      if (document.fonts && document.fonts.ready) {
+        try {
+          await document.fonts.ready;
+        } catch (_error) {}
+      }
+
+      const clone = document.documentElement.cloneNode(true);
+      inlineAll(document.documentElement, clone);
+
+      const removedNodes = clone.querySelectorAll("script,link[rel=\"stylesheet\"],style");
+      for (let index = 0; index < removedNodes.length; index += 1) {
+        removedNodes[index].remove();
+      }
+
+      stripExternal(clone);
+
+      // Re-embed web fonts as data-URI @font-face rules so the SVG rasterizer
+      // can resolve them — external font URLs aren't fetched during
+      // foreignObject rendering, which would otherwise force a fallback face
+      // and change text metrics.
+      const inlinedFontCss = await buildInlinedFontCss();
+      if (inlinedFontCss) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = inlinedFontCss;
+        const head = clone.querySelector("head");
+        if (head) head.appendChild(styleEl);
+        else clone.insertBefore(styleEl, clone.firstChild);
+      }
+
+      const html = new XMLSerializer().serializeToString(clone);
+      const svg =
+        `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
+        '<foreignObject width="100%" height="100%">' +
+        `<div xmlns="http://www.w3.org/1999/xhtml" style="width:${width}px;height:${height}px;overflow:hidden">` +
+        `<div style="position:relative;left:-${scrollX}px;top:-${scrollY}px">` +
+        html +
+        "</div></div></foreignObject></svg>";
+      const svgUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+      const image = new Image();
+      image.onload = function () {
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d").drawImage(image, 0, 0);
+        postResult(canvas.toDataURL("image/png"));
+      };
+      image.onerror = function () {
+        postResult(null);
+      };
+      image.src = svgUrl;
+    } catch (_error) {
+      postResult(null);
+    }
+  }
+
+  window.addEventListener("message", function (event) {
+    if (!event.data) return;
+    // Only accept messages from the direct parent frame. Blocks sibling /
+    // unrelated-window postMessage senders that could otherwise reach us.
+    if (event.source !== window.parent) return;
+
+    const trustedParentOrigin = getTrustedParentOrigin(event);
+    if (!trustedParentOrigin) return;
+    trustedTopOrigin = trustedParentOrigin;
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_START") {
+      scrollForwarding = true;
+      emitScroll();
+      return;
+    }
+
+    if (event.data.type === "INLINE_EDIT_SCROLL_STOP") {
+      scrollForwarding = false;
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      scrollRaf = 0;
+      return;
+    }
+
+    if (event.data.type !== "INLINE_EDIT_CAPTURE_REQUEST") return;
+
+    handleCaptureRequest(event);
+  });
+})();
+
+</script></body>
+</html>
